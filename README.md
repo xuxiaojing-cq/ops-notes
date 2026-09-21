@@ -22,12 +22,12 @@
 
 ## 进度
 
-- [ ] Git 基础与分支协作
-- [ ] Linux 故障排查方法论（USE 方法 / 60 秒排查法）
-- [ ] SRE 核心理念（SLI / SLO / 告警设计 / 复盘）
-- [ ] Prometheus + node_exporter + Grafana 搭建
-- [ ] PromQL 常用表达式
-- [ ] Alertmanager 告警规则与路由
+- [x] Git 基础与分支协作
+- [x] Linux 故障排查方法论（USE 方法 / 60 秒排查法）
+- [x] SRE 核心理念（SLI / SLO / 告警设计 / 复盘）
+- [x] Prometheus + node_exporter + Grafana 搭建
+- [x] PromQL 常用表达式
+- [x] Alertmanager 告警规则与路由
 - [ ] Dockerfile 编写与多阶段构建
 - [ ] Kubernetes 核心对象与排障
 - [ ] GitHub Actions 流水线
