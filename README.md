@@ -28,6 +28,7 @@
 - [x] Prometheus + node_exporter + Grafana 搭建
 - [x] PromQL 常用表达式
 - [x] Alertmanager 告警规则与路由
+- [x] Docker 核心概念（namespace / cgroup / 卷 / 网络）与容器排障
 - [ ] Dockerfile 编写与多阶段构建
 - [ ] Kubernetes 核心对象与排障
 - [ ] GitHub Actions 流水线
