@@ -30,6 +30,7 @@
 - [x] Alertmanager 告警规则与路由
 - [x] Docker 核心概念（namespace / cgroup / 卷 / 网络）与容器排障
 - [x] Dockerfile 编写与多阶段构建
+- [x] Docker Compose 编排（网络 / 依赖 / 卷 / 配置热加载）与负载异常排查
 - [ ] Kubernetes 核心对象与排障
 - [ ] GitHub Actions 流水线
 - [ ] Ansible playbook 改写部署脚本
