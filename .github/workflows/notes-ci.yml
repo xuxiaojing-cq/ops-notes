@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - ci/day11-actions
+      - ci/day12-tests-artifacts
   pull_request:
     branches:
       - main
@@ -26,47 +27,21 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Check Markdown files
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Check Markdown and generate report
         shell: bash
         run: |
-          python - <<'PY'
-          import subprocess
-          import sys
-          from pathlib import Path
+          mkdir -p reports
+          set -o pipefail
+          python scripts/check_notes.py 2>&1 | tee reports/notes-check.txt
 
-          output = subprocess.check_output(
-              ["git", "ls-files", "-z", "--", "*.md"]
-          )
-          files = [
-              Path(name.decode("utf-8"))
-              for name in output.split(b"\0")
-              if name
-          ]
-
-          errors = []
-
-          if Path("README.md") not in files:
-              errors.append("README.md is missing from tracked files")
-
-          for path in files:
-              try:
-                  text = path.read_text(encoding="utf-8")
-              except UnicodeError:
-                  errors.append(f"{path}: invalid UTF-8")
-                  continue
-
-              if not text.strip():
-                  errors.append(f"{path}: empty Markdown file")
-
-              if "\0" in text:
-                  errors.append(f"{path}: contains a NUL character")
-
-              print(f"Checked: {path}")
-
-          if errors:
-              for error in errors:
-                  print(f"ERROR: {error}", file=sys.stderr)
-              sys.exit(1)
-
-          print(f"PASS: checked {len(files)} Markdown files")
-          PY
+      - name: Upload check report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: notes-check-report
+          path: reports/notes-check.txt
+          if-no-files-found: warn
+          retention-days: 7
