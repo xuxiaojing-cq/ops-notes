@@ -33,7 +33,8 @@
 - [x] Docker Compose 编排（网络 / 依赖 / 卷 / 配置热加载）与负载异常排查
 - [x] [Kubernetes 核心对象与排障](./04-k8s/Kubernetes核心对象与排障实践.md)（Pod / Deployment / Service / 探针 / 常见故障）
 - [x] [GitHub Actions 入门与 PR 检查门槛](./05-cicd/GitHub%20Actions入门与PR检查门槛.md)（自动检查 / 失败修复 / 必需检查）
-- [ ] GitHub Actions 构建、测试与部署流水线
+- [x] [GitHub Actions 自动测试与检查报告](./05-cicd/GitHub%20Actions自动测试与检查报告.md)（单元测试 / 回归验证 / 失败报告 Artifact）
+- [ ] GitHub Actions 应用构建与部署流水线
 - [ ] Ansible playbook 改写部署脚本
 
 ## 说明
