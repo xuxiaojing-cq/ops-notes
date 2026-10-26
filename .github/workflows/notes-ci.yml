@@ -6,6 +6,7 @@ on:
       - main
       - ci/day11-actions
       - ci/day12-tests-artifacts
+      - ci/day13-docker-build
   pull_request:
     branches:
       - main
@@ -45,3 +46,82 @@ jobs:
           path: reports/notes-check.txt
           if-no-files-found: warn
           retention-days: 7
+
+  docker-smoke:
+    needs: check-markdown
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Build image
+        run: docker build -t ci-web:${{ github.sha }} examples/ci-web
+
+      - name: Start container
+        run: |
+          docker run -d \
+            --name day13-ci-web \
+            -p 127.0.0.1:18080:8080 \
+            ci-web:${{ github.sha }}
+
+      - name: Verify HTTP and runtime user
+        shell: bash
+        run: |
+          ready=false
+
+          for attempt in $(seq 1 15); do
+            echo "Health check attempt: $attempt"
+
+            if curl --fail --show-error --silent \
+              --max-time 2 \
+              http://127.0.0.1:18080/healthz \
+              -o health-response.txt; then
+              if [ "$(cat health-response.txt)" = "ok" ]; then
+                ready=true
+                break
+              fi
+            fi
+
+            sleep 2
+          done
+
+          if [ "$ready" != "true" ]; then
+            echo "ERROR: health check did not return ok"
+            exit 1
+          fi
+
+          echo "Health response:"
+          cat health-response.txt
+
+          echo "Runtime user:"
+          docker exec day13-ci-web id
+          test "$(docker exec day13-ci-web id -u)" = "10001"
+          test "$(docker exec day13-ci-web id -g)" = "10001"
+
+      - name: Collect container diagnostics
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          mkdir -p reports/docker
+          docker ps -a > reports/docker/containers.txt 2>&1
+          docker logs day13-ci-web > reports/docker/container.log 2>&1 || true
+          docker inspect day13-ci-web > reports/docker/inspect.json 2>&1 || true
+
+          if [ -f health-response.txt ]; then
+            cp health-response.txt reports/docker/
+          fi
+
+      - name: Upload container diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-smoke-diagnostics
+          path: reports/docker/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Remove test container
+        if: ${{ always() }}
+        run: docker rm -f day13-ci-web || true
