@@ -7,11 +7,17 @@ on:
       - ci/day11-actions
       - ci/day12-tests-artifacts
       - ci/day13-docker-build
+      - ci/day14-image-publish
   pull_request:
     branches:
       - main
   workflow_dispatch:
-
+    inputs:
+      publish:
+        description: "Publish verified image to GHCR (main only)"
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
 
@@ -51,6 +57,9 @@ jobs:
     needs: check-markdown
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout repository
@@ -99,6 +108,44 @@ jobs:
           docker exec day13-ci-web id
           test "$(docker exec day13-ci-web id -u)" = "10001"
           test "$(docker exec day13-ci-web id -g)" = "10001"
+
+      - name: Log in to GHCR
+        id: ghcr-login
+        if: ${{ success() && github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main' }}
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" |
+            docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+      - name: Publish verified image
+        if: ${{ success() && github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main' }}
+        env:
+          IMAGE_OWNER: ${{ github.repository_owner }}
+          COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -o pipefail
+
+          owner="${IMAGE_OWNER,,}"
+          image="ghcr.io/${owner}/ci-web:sha-${COMMIT_SHA}"
+
+          mkdir -p reports/docker
+
+          docker tag "ci-web:${COMMIT_SHA}" "$image"
+          docker push "$image" 2>&1 | tee reports/docker/push.log
+
+          {
+            echo "## Published image"
+            echo
+            echo "- Image tag: \`$image\`"
+            echo "- Source commit: \`$COMMIT_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log out of GHCR
+        if: ${{ always() && steps.ghcr-login.outcome == 'success' }}
+        run: docker logout ghcr.io
 
       - name: Collect container diagnostics
         if: ${{ !cancelled() }}
