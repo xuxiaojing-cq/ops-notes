@@ -35,7 +35,9 @@
 - [x] [GitHub Actions 入门与 PR 检查门槛](./05-cicd/GitHub%20Actions入门与PR检查门槛.md)（自动检查 / 失败修复 / 必需检查）
 - [x] [GitHub Actions 自动测试与检查报告](./05-cicd/GitHub%20Actions自动测试与检查报告.md)（单元测试 / 回归验证 / 失败报告 Artifact）
 - [x] [GitHub Actions 镜像构建与冒烟测试](./05-cicd/GitHub%20Actions镜像构建与冒烟测试.md)（Docker build / HTTP 验证 / 失败诊断）
-- [ ] GitHub Actions 镜像发布与部署流水线
+- [x] [GitHub Actions 镜像发布与版本追溯](./05-cicd/GitHub%20Actions镜像发布与版本追溯.md)（GHCR / tag 与 digest / 发布权限）
+- [x] [已发布镜像的部署与版本验证](./05-cicd/镜像部署与版本验证.md)（digest 拉取 / 分层验证 / 部署记录）
+- [ ] 发布失败与回滚演练
 - [ ] Ansible playbook 改写部署脚本
 
 ## 说明
