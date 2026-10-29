@@ -37,7 +37,7 @@
 - [x] [GitHub Actions 镜像构建与冒烟测试](./05-cicd/GitHub%20Actions镜像构建与冒烟测试.md)（Docker build / HTTP 验证 / 失败诊断）
 - [x] [GitHub Actions 镜像发布与版本追溯](./05-cicd/GitHub%20Actions镜像发布与版本追溯.md)（GHCR / tag 与 digest / 发布权限）
 - [x] [已发布镜像的部署与版本验证](./05-cicd/镜像部署与版本验证.md)（digest 拉取 / 分层验证 / 部署记录）
-- [ ] 发布失败与回滚演练
+- [x] [发布失败与回滚演练](./05-cicd/发布失败与回滚演练.md)（CI 通过但部署失败 / 故障现场 / 按记录回滚）
 - [ ] Ansible playbook 改写部署脚本
 
 ## 说明
