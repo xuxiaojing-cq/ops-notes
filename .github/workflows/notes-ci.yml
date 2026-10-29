@@ -72,6 +72,7 @@ jobs:
         run: |
           docker run -d \
             --name day13-ci-web \
+            -e APP_GREETING=ci-demo \
             -p 127.0.0.1:18080:8080 \
             ci-web:${{ github.sha }}
 

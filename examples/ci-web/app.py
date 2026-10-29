@@ -1,3 +1,5 @@
+import os
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 
@@ -17,6 +19,12 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    greeting = os.environ.get("APP_GREETING")
+    if not greeting:
+        print("ERROR: APP_GREETING is required", file=sys.stderr, flush=True)
+        sys.exit(1)
+
+    print(f"Greeting configured: {greeting}", flush=True)
     server = HTTPServer(("0.0.0.0", 8080), Handler)
     print("Listening on port 8080", flush=True)
     server.serve_forever()
