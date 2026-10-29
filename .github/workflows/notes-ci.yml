@@ -8,6 +8,7 @@ on:
       - ci/day12-tests-artifacts
       - ci/day13-docker-build
       - ci/day14-image-publish
+      - ci/day16-rollback-drill
   pull_request:
     branches:
       - main
