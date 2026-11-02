@@ -1,0 +1,120 @@
+---
+- name: Deploy ci-web container
+  hosts: web
+  become: false
+
+  vars:
+    app_name: ansible-ci-web
+    app_port: 18083
+    app_image: "ghcr.io/xuxiaojing-cq/ci-web@sha256:0416a982d2b06591679d9d18d830e09c51815c11b8b69e316db31f1633b8e085"
+    app_greeting: "deployed-by-ansible"
+
+  tasks:
+    # ---------- 1. 确保镜像存在 ----------
+    - name: Inspect target image locally
+      ansible.builtin.command:
+        argv: [docker, image, inspect, --format, "{{ '{{.Id}}' }}", "{{ app_image }}"]
+      register: image_check
+      changed_when: false
+      failed_when: false
+
+    - name: Pull image when missing
+      ansible.builtin.command:
+        argv: [docker, pull, "{{ app_image }}"]
+      when: image_check.rc != 0
+      changed_when: true
+
+    - name: Resolve target image ID
+      ansible.builtin.command:
+        argv: [docker, image, inspect, --format, "{{ '{{.Id}}' }}", "{{ app_image }}"]
+      register: target_image
+      changed_when: false
+
+    - name: Record expected image ID
+      ansible.builtin.set_fact:
+        expected_id: "{{ target_image.stdout | trim }}"
+
+    # ---------- 2. 判断容器是否需要重建 ----------
+    - name: Inspect existing container
+      ansible.builtin.command:
+        argv: [docker, inspect, --format, "{{ '{{.Image}}' }}", "{{ app_name }}"]
+      register: running_container
+      changed_when: false
+      failed_when: false
+
+    - name: Decide whether the container must be recreated
+      ansible.builtin.set_fact:
+        needs_recreate: >-
+          {{ running_container.rc != 0
+             or (running_container.stdout | trim) != expected_id }}
+
+    - name: Show decision
+      ansible.builtin.debug:
+        msg:
+          exists: "{{ running_container.rc == 0 }}"
+          expected_id: "{{ expected_id }}"
+          running_id: "{{ (running_container.stdout | trim) if running_container.rc == 0 else 'none' }}"
+          needs_recreate: "{{ needs_recreate }}"
+
+    - name: Remove outdated container
+      ansible.builtin.command:
+        argv: [docker, rm, -f, "{{ app_name }}"]
+      when:
+        - running_container.rc == 0
+        - (running_container.stdout | trim) != expected_id
+      changed_when: true
+
+    - name: Run application container
+      ansible.builtin.command:
+        argv:
+          - docker
+          - run
+          - -d
+          - --name
+          - "{{ app_name }}"
+          - --restart
+          - unless-stopped
+          - --memory
+          - 128m
+          - --cpus
+          - "0.25"
+          - --log-opt
+          - max-size=10m
+          - --log-opt
+          - max-file=3
+          - -e
+          - "APP_GREETING={{ app_greeting }}"
+          - -p
+          - "127.0.0.1:{{ app_port }}:8080"
+          - "{{ app_image }}"
+      when: needs_recreate | bool
+      changed_when: true
+
+    # ---------- 3. 验证 ----------
+    - name: Wait for health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}/healthz"
+        return_content: true
+        status_code: 200
+      register: health
+      retries: 10
+      delay: 2
+      until: health.status == 200
+
+    - name: Assert health payload
+      ansible.builtin.assert:
+        that:
+          - health.content | trim == "ok"
+        success_msg: "health ok"
+
+    - name: Read runtime uid
+      ansible.builtin.command:
+        argv: [docker, exec, "{{ app_name }}", id, -u]
+      register: runtime_uid
+      changed_when: false
+
+    - name: Assert non-root runtime
+      ansible.builtin.assert:
+        that:
+          - runtime_uid.stdout | trim == "10001"
+        success_msg: "running as uid {{ runtime_uid.stdout | trim }}"
