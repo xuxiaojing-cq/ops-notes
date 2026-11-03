@@ -207,7 +207,6 @@ jobs:
 
     env:
       IMAGE_REF: ${{ needs.docker-smoke.outputs.image_ref }}
-      WORK_DIR: ${{ runner.temp }}/ansible-deploy
 
     steps:
       - name: Checkout repository
@@ -220,6 +219,7 @@ jobs:
       - name: Prepare SSH access and inventory
         shell: bash
         env:
+          WORK_DIR: ${{ runner.temp }}/ansible-deploy
           ECS_HOST: ${{ secrets.ECS_HOST }}
           ECS_USER: ${{ secrets.ECS_USER }}
           ECS_SSH_KEY: ${{ secrets.ECS_SSH_KEY }}
@@ -256,8 +256,9 @@ jobs:
 
       - name: Run Ansible deploy
         env:
-          ANSIBLE_CONFIG: ${{ runner.temp }}/ansible-deploy/ansible.cfg
+          WORK_DIR: ${{ runner.temp }}/ansible-deploy
         run: |
+          export ANSIBLE_CONFIG="$WORK_DIR/ansible.cfg"
           ansible-playbook \
             -i "$WORK_DIR/inventory.ini" \
             05-cicd/ansible/deploy-ci-web.yml \
@@ -268,6 +269,7 @@ jobs:
       - name: Verify deployed container
         shell: bash
         env:
+          WORK_DIR: ${{ runner.temp }}/ansible-deploy
           ECS_HOST: ${{ secrets.ECS_HOST }}
           ECS_USER: ${{ secrets.ECS_USER }}
         run: |
@@ -281,6 +283,8 @@ jobs:
       - name: Remove deployment credentials
         if: ${{ always() }}
         shell: bash
+        env:
+          WORK_DIR: ${{ runner.temp }}/ansible-deploy
         run: |
           shred -u "$WORK_DIR/deploy_key" 2>/dev/null || rm -f "$WORK_DIR/deploy_key"
           rm -rf "$WORK_DIR"
