@@ -9,6 +9,7 @@ on:
       - ci/day13-docker-build
       - ci/day14-image-publish
       - ci/day16-rollback-drill
+      - ci/day18-deploy
   pull_request:
     branches:
       - main
