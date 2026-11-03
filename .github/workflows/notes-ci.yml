@@ -19,6 +19,11 @@ on:
         required: true
         type: boolean
         default: false
+      deploy:
+        description: "Deploy published image to ECS via Ansible (main only)"
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
 
@@ -61,6 +66,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image_ref: ${{ steps.publish.outputs.image_ref }}
 
     steps:
       - name: Checkout repository
@@ -122,6 +129,7 @@ jobs:
             docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
       - name: Publish verified image
+        id: publish
         if: ${{ success() && github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main' }}
         env:
           IMAGE_OWNER: ${{ github.repository_owner }}
@@ -138,10 +146,23 @@ jobs:
           docker tag "ci-web:${COMMIT_SHA}" "$image"
           docker push "$image" 2>&1 | tee reports/docker/push.log
 
+          digest="$(grep -oE 'digest: sha256:[0-9a-f]{64}' reports/docker/push.log | tail -1 | awk '{print $2}')"
+
+          if [ -z "$digest" ]; then
+            echo "ERROR: could not read digest from push output" >&2
+            exit 1
+          fi
+
+          image_ref="ghcr.io/${owner}/ci-web@${digest}"
+
+          echo "image_ref=${image_ref}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${image}" >> "$GITHUB_OUTPUT"
+
           {
             echo "## Published image"
             echo
             echo "- Image tag: \`$image\`"
+            echo "- Image digest ref: \`$image_ref\`"
             echo "- Source commit: \`$COMMIT_SHA\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -174,3 +195,92 @@ jobs:
       - name: Remove test container
         if: ${{ always() }}
         run: docker rm -f day13-ci-web || true
+
+  deploy:
+    needs: docker-smoke
+    if: ${{ success() && github.event_name == 'workflow_dispatch' && inputs.deploy && inputs.publish && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+
+    env:
+      IMAGE_REF: ${{ needs.docker-smoke.outputs.image_ref }}
+      WORK_DIR: ${{ runner.temp }}/ansible-deploy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Ansible
+        run: |
+          python3 -m pip install --quiet 'ansible-core==2.18.*'
+
+      - name: Prepare SSH access and inventory
+        shell: bash
+        env:
+          ECS_HOST: ${{ secrets.ECS_HOST }}
+          ECS_USER: ${{ secrets.ECS_USER }}
+          ECS_SSH_KEY: ${{ secrets.ECS_SSH_KEY }}
+          ECS_KNOWN_HOSTS: ${{ secrets.ECS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${IMAGE_REF}" ]; then
+            echo "ERROR: image_ref is empty; publish step did not run" >&2
+            exit 1
+          fi
+
+          install -d -m 700 "$WORK_DIR"
+
+          printf '%s\n' "$ECS_SSH_KEY" > "$WORK_DIR/deploy_key"
+          chmod 600 "$WORK_DIR/deploy_key"
+
+          printf '%s\n' "$ECS_KNOWN_HOSTS" > "$WORK_DIR/known_hosts"
+          chmod 600 "$WORK_DIR/known_hosts"
+
+          cat > "$WORK_DIR/ansible.cfg" <<EOF
+          [defaults]
+          inventory = $WORK_DIR/inventory.ini
+          host_key_checking = True
+          display_skipped_hosts = True
+          EOF
+
+          cat > "$WORK_DIR/inventory.ini" <<EOF
+          [web]
+          target ansible_host=$ECS_HOST ansible_user=$ECS_USER ansible_ssh_private_key_file=$WORK_DIR/deploy_key ansible_ssh_common_args='-o IdentitiesOnly=yes -o UserKnownHostsFile=$WORK_DIR/known_hosts -o StrictHostKeyChecking=yes'
+          EOF
+
+          echo "deploying image: $IMAGE_REF"
+
+      - name: Run Ansible deploy
+        env:
+          ANSIBLE_CONFIG: ${{ runner.temp }}/ansible-deploy/ansible.cfg
+        run: |
+          ansible-playbook \
+            -i "$WORK_DIR/inventory.ini" \
+            05-cicd/ansible/deploy-ci-web.yml \
+            -e "app_name=gha-ci-web" \
+            -e "app_port=18084" \
+            -e "app_image=$IMAGE_REF"
+
+      - name: Verify deployed container
+        shell: bash
+        env:
+          ECS_HOST: ${{ secrets.ECS_HOST }}
+          ECS_USER: ${{ secrets.ECS_USER }}
+        run: |
+          ssh -i "$WORK_DIR/deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o UserKnownHostsFile="$WORK_DIR/known_hosts" \
+            -o StrictHostKeyChecking=yes \
+            "${ECS_USER}@${ECS_HOST}" \
+            "docker ps --filter name=gha-ci-web --format '{{.Names}} {{.Status}} {{.Ports}}' && curl -fsS --max-time 5 http://127.0.0.1:18084/healthz"
+
+      - name: Remove deployment credentials
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          shred -u "$WORK_DIR/deploy_key" 2>/dev/null || rm -f "$WORK_DIR/deploy_key"
+          rm -rf "$WORK_DIR"
