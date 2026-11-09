@@ -1,0 +1,226 @@
+---
+# Day 19：部署失败自动回滚 + 多主机分批
+# 结构：采集回滚点 → block(部署) / rescue(回滚) / always(收尾) → 失败必须让 play 报错
+- name: Deploy with automatic rollback
+  hosts: web
+  become: false
+  serial: "{{ batch_size | default(1) }}"
+  max_fail_percentage: "{{ max_fail_pct | default(0) }}"
+
+  vars:
+    app_image: "ci-web:v2"
+    app_greeting: "deployed-by-ansible"
+    # 回滚时的兜底镜像名：只有回滚点采不到才用它
+    fallback_image: "ci-web:v1"
+
+  tasks:
+    # ========== 阶段 1：部署前，先记住"现在跑的是什么" ==========
+    - name: Record the running image as rollback point
+      ansible.builtin.command:
+        argv: [docker, inspect, --format, "{{ '{{.Image}}' }}", "{{ app_name }}"]
+      register: current_container
+      changed_when: false
+      failed_when: false
+
+    - name: Record the running greeting as rollback env
+      ansible.builtin.command:
+        argv: [docker, inspect, --format, "{{ '{{json .Config.Env}}' }}", "{{ app_name }}"]
+      register: current_env
+      changed_when: false
+      failed_when: false
+
+    - name: Decide rollback target
+      ansible.builtin.set_fact:
+        rollback_image: >-
+          {{ (current_container.stdout | trim)
+             if current_container.rc == 0 and (current_container.stdout | trim) | length > 0
+             else fallback_image }}
+        rollback_greeting: >-
+          {{ ((current_env.stdout | from_json) | select('match', '^APP_GREETING=')
+              | map('regex_replace', '^APP_GREETING=', '') | list | first | default('rollback'))
+             if current_env.rc == 0 else 'rollback' }}
+
+    - name: Show rollback point
+      ansible.builtin.debug:
+        msg:
+          host: "{{ inventory_hostname }}"
+          container_existed: "{{ current_container.rc == 0 }}"
+          rollback_image: "{{ rollback_image }}"
+          rollback_greeting: "{{ rollback_greeting }}"
+          target_image: "{{ app_image }}"
+
+    # ========== 阶段 2：部署前先确认新镜像在本机可用 ==========
+    - name: Verify target image exists locally
+      ansible.builtin.command:
+        argv: [docker, image, inspect, --format, "{{ '{{.Id}}' }}", "{{ app_image }}"]
+      register: target_local
+      changed_when: false
+      failed_when: false
+
+    - name: Pull image when missing
+      ansible.builtin.command:
+        argv: [docker, pull, "{{ app_image }}"]
+      when: target_local.rc != 0
+      changed_when: true
+
+    - name: Resolve target image ID
+      ansible.builtin.command:
+        argv: [docker, image, inspect, --format, "{{ '{{.Id}}' }}", "{{ app_image }}"]
+      register: target_image
+      changed_when: false
+
+    - name: Record expected image ID
+      ansible.builtin.set_fact:
+        expected_id: "{{ target_image.stdout | trim }}"
+        needs_recreate: >-
+          {{ current_container.rc != 0
+             or (current_container.stdout | trim) != (target_image.stdout | trim) }}
+
+    - name: Refuse to remove a working container for a broken image
+      ansible.builtin.assert:
+        that:
+          - expected_id | length > 0
+        fail_msg: "target image {{ app_image }} is not available locally"
+
+    # ========== 阶段 3：部署 + 验证，失败则回滚 ==========
+    - name: Deploy and verify
+      block:
+        - name: Remove container when image differs
+          ansible.builtin.command:
+            argv: [docker, rm, -f, "{{ app_name }}"]
+          when:
+            - needs_recreate | bool
+            - current_container.rc == 0
+          changed_when: true
+
+        - name: Start target container
+          ansible.builtin.command:
+            argv:
+              - docker
+              - run
+              - -d
+              - --name
+              - "{{ app_name }}"
+              - --restart
+              - unless-stopped
+              - --memory
+              - 128m
+              - --cpus
+              - "0.25"
+              - --log-opt
+              - max-size=10m
+              - --log-opt
+              - max-file=3
+              - -e
+              - "APP_GREETING={{ app_greeting }}"
+              - -p
+              - "127.0.0.1:{{ app_port }}:8080"
+              - "{{ app_image }}"
+          when: needs_recreate | bool
+          changed_when: true
+
+        - name: Wait for health endpoint
+          ansible.builtin.uri:
+            url: "http://127.0.0.1:{{ app_port }}/healthz"
+            return_content: true
+            status_code: 200
+          register: health
+          retries: 10
+          delay: 2
+          until: health.status == 200
+
+        - name: Assert health payload
+          ansible.builtin.assert:
+            that:
+              - health.content | trim == "ok"
+            success_msg: "health ok on {{ inventory_hostname }}"
+
+        - name: Read runtime uid
+          ansible.builtin.command:
+            argv: [docker, exec, "{{ app_name }}", id, -u]
+          register: runtime_uid
+          changed_when: false
+
+        - name: Assert non-root runtime
+          ansible.builtin.assert:
+            that:
+              - runtime_uid.stdout | trim == "10001"
+            success_msg: "runtime uid 10001"
+
+      rescue:
+        - name: Deployment failed, recording the cause
+          ansible.builtin.debug:
+            msg:
+              host: "{{ inventory_hostname }}"
+              failed_task: "{{ ansible_failed_task.name | default('unknown') }}"
+              rollback_image: "{{ rollback_image }}"
+
+        - name: Remove the failed container
+          ansible.builtin.command:
+            argv: [docker, rm, -f, "{{ app_name }}"]
+          changed_when: true
+          failed_when: false
+
+        - name: Restore previous version
+          block:
+            - name: Start rollback container
+              ansible.builtin.command:
+                argv:
+                  - docker
+                  - run
+                  - -d
+                  - --name
+                  - "{{ app_name }}"
+                  - --restart
+                  - unless-stopped
+                  - --memory
+                  - 128m
+                  - --cpus
+                  - "0.25"
+                  - --log-opt
+                  - max-size=10m
+                  - --log-opt
+                  - max-file=3
+                  - -e
+                  - "APP_GREETING={{ rollback_greeting }}"
+                  - -p
+                  - "127.0.0.1:{{ app_port }}:8080"
+                  - "{{ rollback_image }}"
+              changed_when: true
+
+            - name: Verify rollback is actually serving
+              ansible.builtin.uri:
+                url: "http://127.0.0.1:{{ app_port }}/healthz"
+                return_content: true
+                status_code: 200
+              register: rollback_health
+              retries: 10
+              delay: 2
+              until: rollback_health.status == 200
+
+            - name: Mark rollback as successful
+              ansible.builtin.set_fact:
+                rollback_result: "restored {{ rollback_image }}"
+
+          rescue:
+            - name: Rollback itself failed
+              ansible.builtin.set_fact:
+                rollback_result: "rollback failed, manual intervention required"
+
+        - name: Fail the host even when rollback worked
+          ansible.builtin.fail:
+            msg: >-
+              deploy of {{ app_image }} failed on {{ inventory_hostname }};
+              {{ rollback_result }}
+
+    # ========== 阶段 4：无论成败都记录现场 ==========
+    - name: Report final container state
+      ansible.builtin.command:
+        argv: [docker, ps, -a, --filter, "name=^/{{ app_name }}$", --format, "{{ '{{.Names}} {{.Status}} {{.Image}}' }}"]
+      register: final_state
+      changed_when: false
+      failed_when: false
+
+    - name: Print final state
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ final_state.stdout | default('no container') }}"

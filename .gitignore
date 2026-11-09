@@ -221,3 +221,6 @@ __marimo__/
 
 # Ansible: 实际主机清单含服务器地址，不提交
 05-cicd/ansible/inventory.ini
+
+# Day 19 多主机 inventory，同样含真实地址
+05-cicd/ansible/inventory-multi.ini
