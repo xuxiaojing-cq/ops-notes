@@ -224,3 +224,8 @@ __marimo__/
 
 # Day 19 多主机 inventory，同样含真实地址
 05-cicd/ansible/inventory-multi.ini
+
+# alert-insight 抓取的真实告警 payload：含主机名、实例地址、业务指标，一律不提交
+07-ai/alert-insight/captured/
+07-ai/**/captured/
+07-ai/**/*.captured.json
