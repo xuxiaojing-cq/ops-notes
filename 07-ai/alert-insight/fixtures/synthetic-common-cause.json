@@ -1,0 +1,71 @@
+[
+  {
+    "receiver": "critical-webhook",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {
+          "alertname": "ServiceDown",
+          "instance": "web01:28081",
+          "job": "ci-web",
+          "severity": "critical"
+        },
+        "annotations": {
+          "summary": "ci-web 健康检查失败"
+        },
+        "startsAt": "2026-11-17T10:02:11.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "generatorURL": "http://HOST:9090/graph",
+        "fingerprint": "aa01000000000001"
+      },
+      {
+        "status": "firing",
+        "labels": {
+          "alertname": "ServiceDown",
+          "instance": "web02:28082",
+          "job": "ci-web",
+          "severity": "critical"
+        },
+        "annotations": {
+          "summary": "ci-web 健康检查失败"
+        },
+        "startsAt": "2026-11-17T10:02:14.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "generatorURL": "http://HOST:9090/graph",
+        "fingerprint": "aa01000000000002"
+      },
+      {
+        "status": "firing",
+        "labels": {
+          "alertname": "ServiceDown",
+          "instance": "web03:28083",
+          "job": "ci-web",
+          "severity": "critical"
+        },
+        "annotations": {
+          "summary": "ci-web 健康检查失败"
+        },
+        "startsAt": "2026-11-17T10:02:19.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "generatorURL": "http://HOST:9090/graph",
+        "fingerprint": "aa01000000000003"
+      }
+    ],
+    "groupLabels": {
+      "alertname": "ServiceDown"
+    },
+    "commonLabels": {
+      "alertname": "ServiceDown",
+      "job": "ci-web",
+      "severity": "critical"
+    },
+    "commonAnnotations": {
+      "summary": "ci-web 健康检查失败"
+    },
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}/{severity=\"critical\"}:{alertname=\"ServiceDown\"}",
+    "truncatedAlerts": 0
+  }
+]

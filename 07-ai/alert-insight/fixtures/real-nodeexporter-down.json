@@ -1,0 +1,41 @@
+[
+  {
+    "receiver": "critical-webhook",
+    "status": "resolved",
+    "alerts": [
+      {
+        "status": "resolved",
+        "labels": {
+          "alertname": "NodeExporterDown",
+          "instance": "localhost:9100",
+          "job": "node",
+          "severity": "critical"
+        },
+        "annotations": {
+          "summary": "node_exporter 已停止"
+        },
+        "startsAt": "2026-09-20T14:09:38.18Z",
+        "endsAt": "2026-09-20T14:24:53.18Z",
+        "generatorURL": "http://HOST:9090/graph?g0.expr=up%7Bjob%3D%22node%22%7D+%3D%3D+0&g0.tab=1",
+        "fingerprint": "0c3f1299754f298a"
+      }
+    ],
+    "groupLabels": {
+      "alertname": "NodeExporterDown",
+      "instance": "localhost:9100"
+    },
+    "commonLabels": {
+      "alertname": "NodeExporterDown",
+      "instance": "localhost:9100",
+      "job": "node",
+      "severity": "critical"
+    },
+    "commonAnnotations": {
+      "summary": "node_exporter 已停止"
+    },
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}/{severity=\"critical\"}:{alertname=\"NodeExporterDown\", instance=\"localhost:9100\"}",
+    "truncatedAlerts": 0
+  }
+]

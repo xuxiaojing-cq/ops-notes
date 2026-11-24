@@ -1,0 +1,210 @@
+[
+  {
+    "receiver": "critical-webhook",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {"alertname": "ServiceDown", "instance": "web01:28081", "job": "ci-web", "severity": "critical"},
+        "annotations": {"summary": "ci-web 健康检查失败"},
+        "startsAt": "2026-11-17T10:02:11.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000001"
+      },
+      {
+        "status": "firing",
+        "labels": {"alertname": "ServiceDown", "instance": "web02:28082", "job": "ci-web", "severity": "critical"},
+        "annotations": {"summary": "ci-web 健康检查失败"},
+        "startsAt": "2026-11-17T10:02:14.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000002"
+      },
+      {
+        "status": "firing",
+        "labels": {"alertname": "ServiceDown", "instance": "web03:28083", "job": "ci-web", "severity": "critical"},
+        "annotations": {"summary": "ci-web 健康检查失败"},
+        "startsAt": "2026-11-17T10:02:19.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000003"
+      }
+    ],
+    "groupLabels": {"alertname": "ServiceDown"},
+    "commonLabels": {"alertname": "ServiceDown", "job": "ci-web", "severity": "critical"},
+    "commonAnnotations": {"summary": "ci-web 健康检查失败"},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}/{severity=\"critical\"}:{alertname=\"ServiceDown\"}",
+    "truncatedAlerts": 0
+  },
+  {
+    "receiver": "default-webhook",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {"alertname": "HighLoadAverage", "instance": "db01:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "db01 1 分钟负载 19.8，持续 5 分钟"},
+        "startsAt": "2026-11-17T10:03:05.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000011"
+      },
+      {
+        "status": "firing",
+        "labels": {"alertname": "HighDiskIOWait", "instance": "db01:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "db01 iowait 持续高于 40%"},
+        "startsAt": "2026-11-17T10:03:35.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000012"
+      }
+    ],
+    "groupLabels": {"instance": "db01:9100"},
+    "commonLabels": {"instance": "db01:9100", "job": "node", "severity": "warning"},
+    "commonAnnotations": {},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}:{instance=\"db01:9100\"}",
+    "truncatedAlerts": 0
+  },
+  {
+    "receiver": "critical-webhook",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {"alertname": "NodeExporterDown", "instance": "web04:9100", "job": "node", "severity": "critical"},
+        "annotations": {"summary": "web04 node_exporter 抓取失败"},
+        "startsAt": "2026-11-17T10:04:10.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000021"
+      },
+      {
+        "status": "firing",
+        "labels": {"alertname": "HighLoadAverage", "instance": "web04:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "web04 负载指标异常"},
+        "startsAt": "2026-11-17T10:04:12.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000022"
+      },
+      {
+        "status": "firing",
+        "labels": {"alertname": "HighMemoryUsage", "instance": "web04:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "web04 内存指标异常"},
+        "startsAt": "2026-11-17T10:04:13.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000023"
+      }
+    ],
+    "groupLabels": {"instance": "web04:9100"},
+    "commonLabels": {"instance": "web04:9100", "job": "node"},
+    "commonAnnotations": {},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}:{instance=\"web04:9100\"}",
+    "truncatedAlerts": 3
+  },
+  {
+    "receiver": "default-webhook",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {"alertname": "HighMemoryUsage", "instance": "web05:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "web05 内存使用率 86%"},
+        "startsAt": "2026-11-17T10:05:00.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000031"
+      }
+    ],
+    "groupLabels": {"instance": "web05:9100"},
+    "commonLabels": {"instance": "web05:9100", "job": "node", "severity": "warning"},
+    "commonAnnotations": {},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}:{instance=\"web05:9100\"}",
+    "truncatedAlerts": 0
+  },
+  {
+    "receiver": "default-webhook",
+    "status": "resolved",
+    "alerts": [
+      {
+        "status": "resolved",
+        "labels": {"alertname": "HighMemoryUsage", "instance": "web05:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "web05 内存使用率 86%"},
+        "startsAt": "2026-11-17T10:05:00.000Z",
+        "endsAt": "2026-11-17T10:06:30.000Z",
+        "fingerprint": "bb00000000000031"
+      }
+    ],
+    "groupLabels": {"instance": "web05:9100"},
+    "commonLabels": {"instance": "web05:9100", "job": "node", "severity": "warning"},
+    "commonAnnotations": {},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}:{instance=\"web05:9100\"}",
+    "truncatedAlerts": 0
+  },
+  {
+    "receiver": "default-webhook",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {"alertname": "HighMemoryUsage", "instance": "web05:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "web05 内存使用率 86%"},
+        "startsAt": "2026-11-17T10:07:00.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000031"
+      }
+    ],
+    "groupLabels": {"instance": "web05:9100"},
+    "commonLabels": {"instance": "web05:9100", "job": "node", "severity": "warning"},
+    "commonAnnotations": {},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}:{instance=\"web05:9100\"}",
+    "truncatedAlerts": 0
+  },
+  {
+    "receiver": "default-webhook",
+    "status": "resolved",
+    "alerts": [
+      {
+        "status": "resolved",
+        "labels": {"alertname": "HighMemoryUsage", "instance": "web05:9100", "job": "node", "severity": "warning"},
+        "annotations": {"summary": "web05 内存使用率 86%"},
+        "startsAt": "2026-11-17T10:07:00.000Z",
+        "endsAt": "2026-11-17T10:08:20.000Z",
+        "fingerprint": "bb00000000000031"
+      }
+    ],
+    "groupLabels": {"instance": "web05:9100"},
+    "commonLabels": {"instance": "web05:9100", "job": "node", "severity": "warning"},
+    "commonAnnotations": {},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}:{instance=\"web05:9100\"}",
+    "truncatedAlerts": 0
+  },
+  {
+    "receiver": "default-webhook",
+    "status": "firing",
+    "alerts": [
+      {
+        "status": "firing",
+        "labels": {"alertname": "DiskSpaceLow", "instance": "nfs01:9100", "job": "node", "severity": "critical", "mountpoint": "/data"},
+        "annotations": {"summary": "nfs01 /data 剩余 4%"},
+        "startsAt": "2026-11-17T10:04:40.000Z",
+        "endsAt": "0001-01-01T00:00:00Z",
+        "fingerprint": "bb00000000000041"
+      }
+    ],
+    "groupLabels": {"instance": "nfs01:9100"},
+    "commonLabels": {"instance": "nfs01:9100", "job": "node", "severity": "critical"},
+    "commonAnnotations": {},
+    "externalURL": "http://HOST:9093",
+    "version": "4",
+    "groupKey": "{}/{severity=\"critical\"}:{instance=\"nfs01:9100\"}",
+    "truncatedAlerts": 0
+  }
+]
